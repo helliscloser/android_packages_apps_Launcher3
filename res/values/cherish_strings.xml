@@ -265,4 +265,8 @@
         <item>Winner Winner ....?</item>
         <item>rm -rf \/</item>
     </string-array>
+
+    <!-- Preference default value -->
+    <string name="pref_value_default">Default</string>
+
 </resources>

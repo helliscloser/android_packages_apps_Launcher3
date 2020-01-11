@@ -21,10 +21,16 @@ import android.widget.TextView;
 import com.android.launcher3.BaseDraggingActivity;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.Launcher;
+import com.android.launcher3.QuickstepTransitionManager;
 import com.android.launcher3.R;
+import com.android.launcher3.util.ActivityOptionsWrapper;
 import com.android.launcher3.util.ComponentKey;
 import com.android.launcher3.widget.WidgetsBottomSheet;
 import com.android.launcher3.util.PackageManagerHelper;
+
+import com.android.launcher3.settings.preference.IconPackPrefSetter;
+import com.android.launcher3.settings.preference.ReloadingListPreference;
+import com.android.launcher3.util.AppReloader;
 
 import static com.android.launcher3.util.Executors.MAIN_EXECUTOR;
 import static com.android.launcher3.util.Executors.THREAD_POOL_EXECUTOR;
@@ -91,11 +97,20 @@ public class InfoBottomSheet extends WidgetsBottomSheet {
 
         private ComponentName mComponent;
         private ComponentKey mKey;
+        private QuickstepTransitionManager mAppTransitionManager;
 
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             mContext = getActivity();
+        }
+
+        private QuickstepTransitionManager getAppTransitionManager() {
+            return mAppTransitionManager;
+        }
+
+        public ActivityOptionsWrapper getActivityLaunchOptions(View v) {
+            return mAppTransitionManager.getActivityLaunchOptions(v);
         }
 
         @Override
@@ -115,6 +130,11 @@ public class InfoBottomSheet extends WidgetsBottomSheet {
             mComponent = itemInfo.getTargetComponent();
             mItemInfo = itemInfo;
             mKey = new ComponentKey(mComponent, itemInfo.user);
+
+            ReloadingListPreference icons = (ReloadingListPreference) findPreference(KEY_ICON_PACK);
+            icons.setValue(IconDatabase.getByComponent(mContext, mKey));
+            icons.setOnReloadListener(ctx -> new IconPackPrefSetter(ctx, mComponent));
+            icons.setOnPreferenceChangeListener(this);
 
             THREAD_POOL_EXECUTOR.execute(() -> {
                 MetadataExtractor extractor = new MetadataExtractor(mContext, mComponent);
@@ -148,7 +168,7 @@ public class InfoBottomSheet extends WidgetsBottomSheet {
 
         private boolean tryStartActivity(Intent intent) {
             Launcher launcher = Launcher.getLauncher(mContext);
-            Bundle opts = launcher.getAppTransitionManager()
+            Bundle opts = getAppTransitionManager()
                     .getActivityLaunchOptions(getView())
                     .toBundle();
             try {
@@ -158,6 +178,17 @@ public class InfoBottomSheet extends WidgetsBottomSheet {
             return false;
         }
 
+        @Override
+        public boolean onPreferenceChange(Preference preference, Object newValue) {
+            if (newValue.equals(IconDatabase.getGlobal(mContext))) {
+                IconDatabase.resetForComponent(mContext, mKey);
+            } else {
+                IconDatabase.setForComponent(mContext, mKey, (String) newValue);
+            }
+            AppReloader.get(mContext).reload(mKey);
+            return true;
+        }
+
         private void onMoreClick() {
             new PackageManagerHelper(InfoBottomSheet.mTarget).startDetailsActivityForInfo(
                         mItemInfo, InfoBottomSheet.mSourceBounds, ActivityOptions.makeBasic().toBundle());
@@ -165,10 +196,8 @@ public class InfoBottomSheet extends WidgetsBottomSheet {
 
         @Override
         public boolean onPreferenceClick(Preference preference) {
-            if (KEY_MORE.equals(preference.getKey())) {
-                  onMoreClick();
-            }
-            return false;
+            onMoreClick();
+            return true;
         }
     }
 
