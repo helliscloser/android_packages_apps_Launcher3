@@ -26,8 +26,6 @@ import android.os.Handler;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
 
-import com.android.internal.util.cherish.OmniJawsClient;
-
 import com.android.launcher3.notification.NotificationKeyData;
 import com.android.launcher3.notification.NotificationListener;
 import com.android.launcher3.util.PackageUserKey;
@@ -35,7 +33,7 @@ import com.android.launcher3.util.PackageUserKey;
 import java.util.ArrayList;
 import java.util.List;
 
-public class QuickspaceController implements NotificationListener.NotificationsChangedListener, OmniJawsClient.OmniJawsObserver {
+public class QuickspaceController implements NotificationListener.NotificationsChangedListener {
 
     public final ArrayList<OnDataListener> mListeners = new ArrayList();
     private static final String SETTING_WEATHER_LOCKSCREEN_UNIT = "weather_lockscreen_unit";
@@ -44,8 +42,6 @@ public class QuickspaceController implements NotificationListener.NotificationsC
 
     private final Handler mHandler;
     private QuickEventsController mEventsController;
-    private OmniJawsClient mWeatherClient;
-    private OmniJawsClient.WeatherInfo mWeatherInfo;
     private Drawable mConditionImage;
 
     private boolean mUseImperialUnit;
@@ -63,29 +59,17 @@ public class QuickspaceController implements NotificationListener.NotificationsC
     public QuickspaceController(Context context) {
         mHandler = new Handler();
         mEventsController = new QuickEventsController(context);
-        mWeatherClient = new OmniJawsClient(context);
         mRemoteController = new RemoteController(context, mRCClientUpdateListener);
         mAudioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         mAudioManager.registerRemoteController(mRemoteController);
     }
-
-    private void addWeatherProvider() {
-        if (mWeatherClient.isOmniJawsEnabled()) {
-            mWeatherClient.addObserver(this);
-            updateWeather();
-        }
-    }
-
-    public void addListener(OnDataListener listener) {
+	
+	public void addListener(OnDataListener listener) {
         mListeners.add(listener);
-        addWeatherProvider();
         listener.onDataUpdated();
     }
 
     public void removeListener(OnDataListener listener) {
-        if (mWeatherClient != null) {
-            mWeatherClient.removeObserver(this);
-        }
         mListeners.remove(listener);
     }
 
@@ -95,19 +79,6 @@ public class QuickspaceController implements NotificationListener.NotificationsC
 
     public QuickEventsController getEventController() {
         return mEventsController;
-    }
-
-    public boolean isWeatherAvailable() {
-        return mWeatherInfo != null;
-    }
-
-    public Drawable getWeatherIcon() {
-        return mConditionImage;
-    }
-
-    public String getWeatherTemp() {
-        String weatherTemp = mWeatherInfo.temp + mWeatherInfo.tempUnits;
-        return weatherTemp;
     }
 
     private void playbackStateUpdate(int state) {
@@ -164,45 +135,10 @@ public class QuickspaceController implements NotificationListener.NotificationsC
             notifyListeners();
         }
     }
-
-    @Override
-    public void weatherUpdated() {
-        queryAndUpdateWeather();
-    }
-
-    private void queryAndUpdateWeather() {
-        if (DEBUG) Log.d(TAG, "queryAndUpdateWeather.isOmniJawsEnabled " + mWeatherClient.isOmniJawsEnabled());
-        mWeatherInfo = null;
-        updateWeather();
-    }
-
-    @Override
-    public void weatherError(int errorReason) {
-        Log.d(TAG, "weatherError " + errorReason);
-        mWeatherInfo = null;
-        notifyListeners();
-    }
-
-    @Override
+	
     public void updateSettings() {
         Log.i(TAG, "updateSettings");
-        if (mWeatherClient.isOmniJawsEnabled()) {
-            updateWeather();
-        }
         notifyListeners();
-    }
-
-    private void updateWeather() {
-        try {
-            mWeatherClient.queryWeather();
-            mWeatherInfo = mWeatherClient.getWeatherInfo();
-            if (mWeatherInfo != null) {
-                mConditionImage = mWeatherClient.getWeatherConditionImage(mWeatherInfo.conditionCode);
-            }
-            notifyListeners();
-        } catch(Exception e) {
-            // Do nothing
-        }
     }
 
     public void notifyListeners() {

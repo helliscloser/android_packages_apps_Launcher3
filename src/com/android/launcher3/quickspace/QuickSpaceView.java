@@ -65,7 +65,6 @@ public class QuickSpaceView extends FrameLayout implements AnimatorUpdateListene
 
     public boolean mIsQuickEvent;
     public boolean mFinishedInflate;
-    public boolean mWeatherAvailable;
 
     private QuickSpaceActionReceiver mActionReceiver;
     public QuickspaceController mController;
@@ -86,7 +85,6 @@ public class QuickSpaceView extends FrameLayout implements AnimatorUpdateListene
             mIsQuickEvent = mController.isQuickEvent();
             prepareLayout();
         }
-        mWeatherAvailable = mController.isWeatherAvailable() && 
                 mController.getEventController().isDeviceIntroCompleted();
         getQuickSpaceView();
         if (mIsQuickEvent) {
@@ -107,14 +105,12 @@ public class QuickSpaceView extends FrameLayout implements AnimatorUpdateListene
         mEventTitleSub.setOnClickListener(mController.getEventController().getAction());
         mEventSubIcon.setImageTintList(mColorStateList);
         mEventSubIcon.setImageResource(mController.getEventController().getActionIcon());
-        bindWeather(mWeatherContentSub, mWeatherTempSub, mWeatherIconSub);
     }
 
     private final void loadSingleLine() {
         LayoutTransition transition = mQuickspaceContent.getLayoutTransition();
         mQuickspaceContent.setLayoutTransition(transition == null ? new LayoutTransition() : null);
         setBackgroundResource(0);
-        bindWeather(mWeatherContent, mWeatherTemp, mWeatherIcon);
         bindClock(false);
     }
 
@@ -126,37 +122,11 @@ public class QuickSpaceView extends FrameLayout implements AnimatorUpdateListene
         }
     }
 
-    private final void bindWeather(View container, TextView title, ImageView icon) {
-        if (mWeatherAvailable) {
-            boolean hasGoogleApp = isPackageEnabled("com.google.android.googlequicksearchbox", getContext());
-            container.setVisibility(View.VISIBLE);
-            container.setOnClickListener(hasGoogleApp ? mActionReceiver.getWeatherAction() : null);
-            if (Utilities.useAlternativeQuickspaceUI(getContext())) {
-                if (mIsQuickEvent) {
-                    title.setText(mController.getWeatherTemp() + " · ");
-                } else {
-                    title.setText(" · " + mController.getWeatherTemp());
-                }
-            } else {
-                title.setText(mController.getWeatherTemp());
-            }
-            icon.setImageDrawable(mController.getWeatherIcon());
-            return;
-        }
-        container.setVisibility(View.GONE);
-    }
-
     private final void loadViews() {
         mEventTitle = (TextView) findViewById(R.id.quick_event_title);
         mEventTitleSub = (TextView) findViewById(R.id.quick_event_title_sub);
         mEventSubIcon = (ImageView) findViewById(R.id.quick_event_icon_sub);
-        mWeatherIcon = (ImageView) findViewById(R.id.weather_icon);
-        mWeatherIconSub = (ImageView) findViewById(R.id.quick_event_weather_icon);
         mQuickspaceContent = (ViewGroup) findViewById(R.id.quickspace_content);
-        mWeatherContent = (ViewGroup) findViewById(R.id.weather_content);
-        mWeatherContentSub = (ViewGroup) findViewById(R.id.quick_event_weather_content);
-        mWeatherTemp = (TextView) findViewById(R.id.weather_temp);
-        mWeatherTempSub = (TextView) findViewById(R.id.quick_event_weather_temp);
         mClockView = (DateTextView) findViewById(R.id.clock_view);
     }
 
