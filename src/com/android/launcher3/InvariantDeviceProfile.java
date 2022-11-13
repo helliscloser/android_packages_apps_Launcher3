@@ -49,7 +49,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
-import com.android.launcher3.lineage.icon.IconPackStore;
+import com.android.launcher3.customization.IconDatabase;
 import com.android.launcher3.model.DeviceGridState;
 import com.android.launcher3.provider.RestoreDbTask;
 import com.android.launcher3.util.DisplayController;
@@ -329,7 +329,7 @@ public class InvariantDeviceProfile implements OnSharedPreferenceChangeListener 
             case KEY_FONT_SIZE:
             case KEY_MAX_LINES:
             case KEY_ALLAPPS_THEMED_ICONS:
-            case IconPackStore.KEY_ICON_PACK:
+            case IconDatabase.KEY_ICON_PACK:
                 onConfigChanged(mContext);
                 break;
         }
@@ -376,7 +376,7 @@ public class InvariantDeviceProfile implements OnSharedPreferenceChangeListener 
         for (int i = 1; i < iconSize.length; i++) {
             maxIconSize = Math.max(maxIconSize, iconSize[i]);
         }
-        iconPack = new IconPackStore(context).getCurrent();
+        iconPack = IconDatabase.getGlobal(context);
         iconBitmapSize = ResourceUtils.pxFromDp(maxIconSize, metrics);
         fillResIconDpi = getLauncherIconDensity(iconBitmapSize);
 

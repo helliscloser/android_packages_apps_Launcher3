@@ -49,16 +49,11 @@ import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.LauncherFiles;
 import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
-import com.android.launcher3.lineage.icon.IconPackStore;
-import com.android.launcher3.lineage.icon.IconPackSettingsActivity;
+import com.android.launcher3.customization.IconDatabase;
+import com.android.launcher3.icons.pack.IconPackSettingsActivity;
 import com.android.launcher3.model.WidgetsModel;
 
 import com.android.settingslib.collapsingtoolbar.CollapsingToolbarBaseActivity;
-
-import com.android.launcher3.customization.IconDatabase;
-import com.android.launcher3.settings.preference.IconPackPrefSetter;
-import com.android.launcher3.settings.preference.ReloadingListPreference;
-import com.android.launcher3.util.AppReloader;
 
 /**
  * Settings activity for Launcher.
@@ -74,8 +69,6 @@ public class SettingsIcons extends CollapsingToolbarBaseActivity
     public static final String EXTRA_SHOW_FRAGMENT_ARGS = ":settings:show_fragment_args";
     private static final int DELAY_HIGHLIGHT_DURATION_MILLIS = 600;
     public static final String SAVE_HIGHLIGHTED_KEY = "android:preference_highlighted";
-
-    private static final String KEY_ICON_PACK = "pref_icon_pack";
 
     @VisibleForTesting
     static final String EXTRA_FRAGMENT = ":settings:fragment";
@@ -163,8 +156,6 @@ public class SettingsIcons extends CollapsingToolbarBaseActivity
         private String mHighLightKey;
         private boolean mPreferenceHighlighted = false;
 
-        private ReloadingListPreference mIconPackPref;
-
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             final Bundle args = getArguments();
@@ -231,7 +222,7 @@ public class SettingsIcons extends CollapsingToolbarBaseActivity
         @Override
         public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
             switch (key) {
-                case IconPackStore.KEY_ICON_PACK:
+                case IconDatabase.KEY_ICON_PACK:
                     updatePreferences();
                     break;
             }
@@ -249,18 +240,9 @@ public class SettingsIcons extends CollapsingToolbarBaseActivity
             switch (preference.getKey()) {
                 case NOTIFICATION_DOTS_PREFERENCE_KEY:
                     return !WidgetsModel.GO_DISABLE_NOTIFICATION_DOTS;
-                case KEY_ICON_PACK:
-                    mIconPackPref = (ReloadingListPreference) preference;
-                    mIconPackPref.setValue(IconDatabase.getGlobal(getActivity()));
-                    mIconPackPref.setOnReloadListener(IconPackPrefSetter::new);
-                    mIconPackPref.setIcon(getPackageIcon(IconDatabase.getGlobal(getActivity())));
-                    mIconPackPref.setOnPreferenceChangeListener((pref, val) -> {
-                        IconDatabase.clearAll(getActivity());
-                        IconDatabase.setGlobal(getActivity(), (String) val);
-                        mIconPackPref.setIcon(getPackageIcon((String) val));
-                        AppReloader.get(getActivity()).reload();
-                        return true;
-                    });
+                case IconDatabase.KEY_ICON_PACK:
+                    setupIconPackPreference(preference);
+                    return true;
             }
 
             return true;
@@ -314,14 +296,13 @@ public class SettingsIcons extends CollapsingToolbarBaseActivity
             });
         }
 
-        private Drawable getPackageIcon(String pkgName) {
-            Drawable icon = getContext().getResources().
-                              getDrawable(com.android.internal.R.drawable.sym_def_app_icon);
-            try {
-                 icon = getContext().getPackageManager().
-                              getApplicationIcon(pkgName);
-            } catch (PackageManager.NameNotFoundException e) {  }
-            return icon;
+        private void setupIconPackPreference(Preference preference) {
+            final String pkgLabel = IconDatabase.getGlobalLabel(getActivity());
+            preference.setSummary(pkgLabel);
+            preference.setOnPreferenceClickListener(p -> {
+                startActivity(new Intent(getActivity(), IconPackSettingsActivity.class));
+                return true;
+            });
         }
     }
 
