@@ -77,25 +77,18 @@ public class LauncherIconProvider extends IconProvider {
     }
 
     private Map<String, ThemeData> getThemedIconMap(String themedIconPack) {
-        if (mThemedIconMap != null) {
-            return mThemedIconMap;
-        }
         ArrayMap<String, ThemeData> map = new ArrayMap<>();
+        Resources res = mContext.getResources();
         boolean themedIconPackAvailable = false;
-        try {
-            Resources res = mContext.getResources();
-            if (themedIconPack != null) {
-                try {
-                    res = mContext.getPackageManager().getResourcesForApplication(themedIconPack);
-                    themedIconPackAvailable = true;
-                } catch(NameNotFoundException e) {
-                    Log.e(TAG, "Themed icon pack " + themedIconPack + " does not exist!");
-                }
-            }
-            int resID = res.getIdentifier("grayscale_icon_map", "xml",
+        if (themedIconPack != null) {
+             try {
+                res = mContext.getPackageManager().getResourcesForApplication(themedIconPack);
+                themedIconPackAvailable = true;
+             } catch(Exception e) {}
+        }
+        int resID = res.getIdentifier("grayscale_icon_map", "xml",
                 themedIconPackAvailable ? themedIconPack : mContext.getPackageName());
-            if (resID != 0) {
-                XmlResourceParser parser = res.getXml(resID);
+        try (XmlResourceParser parser = res.getXml(resID)) {
             final int depth = parser.getDepth();
             int type;
             while ((type = parser.next()) != XmlPullParser.START_TAG
@@ -112,10 +105,7 @@ public class LauncherIconProvider extends IconProvider {
                     if (iconId != 0 && !TextUtils.isEmpty(pkg)) {
                         map.put(pkg, new ThemeData(res, iconId));
                     }
-                 }
-              }
-            } else if (themedIconPackAvailable) {
-                Log.e(TAG, "Icon map does not exist in " + themedIconPack);
+                }
             }
             mThemedIconMap = map;
         } catch (Exception e) {
