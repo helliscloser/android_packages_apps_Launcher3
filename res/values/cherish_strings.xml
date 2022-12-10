@@ -114,6 +114,8 @@
     <string name="icon_pack_default_label">Default</string>
     <string name="icon_pack_add">Install more</string>
     <string name="icon_pack_no_market">There\'s no available app store</string>
+    <string name="app_info_icon_pack" translatable="false">Icon pack</string>
+    <string name="app_info_icon_pack_none" translatable="false">None</string>
 
     <!-- AppInfo -->
     <string name="app_info_subtext">Swipe down to close app info</string>
@@ -265,5 +267,5 @@
         <item>Winner Winner ....?</item>
         <item>rm -rf \/</item>
     </string-array>
-
+    
 </resources>
